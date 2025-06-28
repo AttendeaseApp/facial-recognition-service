@@ -6,25 +6,13 @@ This project is a facial recognition service built using FastAPI. It provides an
 
 1. Clone the repository:
 
-   ```bash
-   git clone <repository-url>
-   cd facial-recognition-service
-   ```
-
 2. Create a virtual environment:
 
    ```bash
    python -m venv venv
    ```
 
-3. Activate the virtual environment:
-
-   - On Windows:
-     ```
-     venv\Scripts\activate
-     ```
-
-4. Install the required dependencies:
+3. Install the required dependencies:
 
    ```bash
    pip install -r requirements.txt

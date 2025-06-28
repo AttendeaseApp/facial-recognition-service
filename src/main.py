@@ -4,10 +4,9 @@ import cv2
 import face_recognition
 import numpy as np
 
-from services.compare_encoding_service import compare_student_face_encoding
+from src.services.compare_encoding_service import compare_student_face_encoding
 
 app = FastAPI()
-
 
 @app.post("/v1/get-face-encoding")
 async def verify_attendance(
