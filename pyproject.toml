@@ -1,0 +1,21 @@
+[project]
+name = "facial_recognition_service_application"
+version = "1.0.0"
+description = "Facial Recognition Service Application for Attendease App"
+authors = [{name = "Jake Viado", email = "jakematthewviado1234@gmail.com"}]
+requires-python = ">=3.9"
+dynamic = ["optional-dependencies"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+optional-dependencies = {dev = {file = ["dev-requirements.txt"]}} # add packages for development in the dev-requirements.txt file
+
+[project.scripts]
+# TODO: add your CLI entry points here
+
+
+
+
