@@ -8,8 +8,8 @@ import io
 
 logging.basicConfig(level=logging.INFO)
 
-from data.face_encoding_request_model import FaceEncodingRequest
-from data.face_verification_request_model import FaceVerificationRequest
+from src.data.face_encoding_request_model import FaceEncodingRequest
+from src.data.face_verification_request_model import FaceVerificationRequest
 
 app = FastAPI(
     title="Facial Recognition Service API",
@@ -163,6 +163,7 @@ async def extract_face_encoding(file: UploadFile = File(...)):
 
         image_data = await file.read()
         image = Image.open(io.BytesIO(image_data))
+        image = image.convert("RGB")
         image_array = np.array(image)
         encodings = face_recognition.face_encodings(image_array)
 
