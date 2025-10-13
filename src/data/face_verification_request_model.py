@@ -3,5 +3,5 @@ from typing import List
 
 
 class FaceVerificationRequest(BaseModel):
-    uploaded_encoding: list[float]
-    reference_encoding: list[float]
+    uploaded_encoding: List[float]
+    reference_encoding: List[float]
