@@ -1,12 +1,13 @@
-import numpy as np
-from typing import List
-import logging
-from fastapi import HTTPException, status, UploadFile
-from PIL import Image
-import io
 import base64
 import binascii
+import io
+import logging
+from typing import List
+
 import face_recognition
+import numpy as np
+from fastapi import HTTPException, UploadFile, status
+from PIL import Image
 
 logging.basicConfig(level=logging.INFO)
 
@@ -112,7 +113,8 @@ class ImageProcessingService:
 
             # 3. Extract encoding with face_recognition
             image_array = np.array(image)
-            encodings = face_recognition.face_encodings(image_array)
+            face_locations = face_recognition.face_locations(image_array, model="hog")
+            encodings = face_recognition.face_encodings(image_array, face_locations)
 
             if len(encodings) == 0:
                 raise HTTPException(

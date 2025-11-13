@@ -1,6 +1,7 @@
-import numpy as np
-from typing import List
 import logging
+from typing import List
+
+import numpy as np
 from fastapi import HTTPException, status
 
 logging.basicConfig(level=logging.INFO)
@@ -92,7 +93,7 @@ class FaceEncodingService:
                 if distance > threshold:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Face encodings are inconsistent. Distance between file {i+1} and {j+1} is too large ({distance:.4f} > {threshold}). Please recapture images.",
+                        detail=f"Face encodings are inconsistent. Distance between file {i + 1} and {j + 1} is too large ({distance:.4f} > {threshold}). Please recapture images.",
                     )
 
     def average_encodings(self, encodings: List[np.ndarray]) -> List[float]:

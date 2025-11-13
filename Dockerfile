@@ -1,23 +1,19 @@
-FROM python:3.9-slim
-
+FROM python:3.10-slim
 WORKDIR /app
 
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y \
     cmake \
+    g++ \
+    make \
     libopenblas-dev \
-    liblapack-dev \
-    libx11-dev \
-    libgtk-3-dev \
-    libboost-python-dev \
-    build-essential
+    libboost-all-dev \
+ && rm -rf /var/lib/apt/lists/*
 
 COPY dev-requirements.txt .
-
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r dev-requirements.txt
+RUN pip install --no-cache-dir -r dev-requirements.txt
 
 COPY . .
 
-EXPOSE 8002
-CMD ["uvicorn", "__main__:app", "--host", "0.0.0.0", "--port", "8002"]
+EXPOSE 8001
+
+CMD ["sh", "-c", "uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8001}"]

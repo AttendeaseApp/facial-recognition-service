@@ -4,7 +4,8 @@ This project is a facial recognition service of RCians Attendease. It is a servi
 
 ## Prerequisites
 
-- Python 3.7+
+- Python 3.13.6
+- CMake 3.16.0
 - pip (python package installer)
 
 ## Setup Instructions
@@ -14,7 +15,13 @@ This project is a facial recognition service of RCians Attendease. It is a servi
 2. Create a virtual environment:
 
    ```bash
-   python -m venv venv
+   python -m venv .venv
+   ```
+
+   then
+
+   ```bash
+   .\.venv\Scripts\Activate.ps1
    ```
 
 3. Install the required dependencies (already on the dev-requirements.txt):

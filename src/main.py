@@ -4,7 +4,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 # api
-from src.api.validate_facial_encoding_api import router as validate_face_encoding_router
 from src.api.facial_verification.compare_face_encoding_router import (
     router as authenticate_face_router,
 )
@@ -24,8 +23,6 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
-
-app.include_router(validate_face_encoding_router, tags=["Face Recognition"])
 
 app.include_router(authenticate_face_router, tags=["Face Verification"])
 

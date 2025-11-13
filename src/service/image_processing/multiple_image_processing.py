@@ -1,11 +1,15 @@
-import numpy as np
-from typing import List, Dict
-from fastapi import HTTPException, UploadFile
 import logging
+from typing import Dict, List
+
+import numpy as np
+from fastapi import HTTPException, UploadFile
+
+from src.service.image_processing.face_encoding_comparing_service import (
+    FaceEncodingService,
+)
 
 # Import the services that handle the atomic tasks
 from src.service.image_processing.image_processing_service import ImageProcessingService
-from src.service.image_processing.face_encoding_service import FaceEncodingService
 
 logging.basicConfig(level=logging.INFO)
 
@@ -30,11 +34,10 @@ class MultiImageRegistrationService:
         Extracts, validates consistency, and averages face encodings from files.
         """
         # 1. Minimum File Count Validation (This could stay in the router but is handled here for end-to-end logic)
-        if len(files) < 3:
-            # Re-using the logic from the original code
+        if len(files) < 5:
             raise HTTPException(
                 status_code=400,
-                detail="At least 3 images required for registration",
+                detail="At least 5 images required for registration",
             )
 
         encodings: List[np.ndarray] = []
