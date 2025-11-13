@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 from fastapi import HTTPException, status
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 
 
 class FaceEncodingService:

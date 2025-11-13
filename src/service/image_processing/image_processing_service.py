@@ -9,7 +9,7 @@ import numpy as np
 from fastapi import HTTPException, UploadFile, status
 from PIL import Image
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 
 
 class ImageProcessingService:
@@ -82,68 +82,42 @@ class ImageProcessingService:
             )
 
     async def extract_single_encoding(self, file: UploadFile) -> np.ndarray:
-        """
-        Extract face encoding from a single uploaded image file (multipart form data).
-
-        Returns: np.ndarray (128-dimensional vector)
-        Raises: HTTPException on file/face errors.
-        """
         try:
-            # 1. Validation and Read
             if not file.content_type or not file.content_type.startswith("image/"):
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid file type for {file.filename}.",
+                    status_code=400, detail=f"Invalid file type: {file.filename}"
                 )
+
             image_data = await file.read()
             if not image_data:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Empty or corrupted image file: {file.filename}.",
+                    status_code=400, detail=f"Empty or corrupted file: {file.filename}"
                 )
 
-            # 2. Process image with PIL
-            try:
-                image = Image.open(io.BytesIO(image_data)).convert("RGB")
-            except Exception:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Failed to process image {file.filename}. File might be corrupted.",
-                )
+            with Image.open(io.BytesIO(image_data)) as img:
+                img = img.convert("RGB")
 
-            # 3. Extract encoding with face_recognition
-            image_array = np.array(image)
+                img.thumbnail((640, 640), Image.Resampling.LANCZOS)
+
+                image_array = np.asarray(img, dtype=np.uint8)
+
+            del image_data
+
             face_locations = face_recognition.face_locations(image_array, model="hog")
             encodings = face_recognition.face_encodings(image_array, face_locations)
 
-            if len(encodings) == 0:
+            if len(encodings) != 1:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"No face detected in image: {file.filename}.",
-                )
-            if len(encodings) > 1:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Multiple faces detected in image: {file.filename}.",
+                    status_code=400,
+                    detail=f"Expected 1 face in {file.filename}, found {len(encodings)}",
                 )
 
-            face_encoding = encodings[0]
-
-            # 4. Final encoding structure check
-            if len(face_encoding) != 128 or not np.all(np.isfinite(face_encoding)):
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Extracted face encoding for {file.filename} is invalid.",
-                )
-
-            logging.info(f"Successfully extracted face encoding from {file.filename}")
-            return face_encoding
+            return encodings[0]
 
         except HTTPException:
             raise
         except Exception as e:
-            logging.error(f"Error processing {file.filename}: {str(e)}", exc_info=True)
+            logging.error(f"Error processing {file.filename}: {e}", exc_info=True)
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred while processing {file.filename}.",
+                status_code=500, detail=f"Error processing {file.filename}: {e}"
             )
