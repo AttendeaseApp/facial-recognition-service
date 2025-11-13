@@ -3,7 +3,7 @@ import logging
 from typing import List, Dict, Any
 
 # services
-from src.service.image_processing.face_encoding_service import FaceEncodingService
+from src.service.image_processing.face_encoding_comparing_service import FaceEncodingService
 from src.service.image_processing.image_processing_service import ImageProcessingService
 from src.service.image_processing.multiple_image_processing import (
     MultiImageRegistrationService,

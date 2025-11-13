@@ -5,7 +5,7 @@ import logging
 from src.data.face_verification_request_model import FaceVerificationRequest
 
 # services
-from src.service.image_processing.face_encoding_service import (
+from src.service.image_processing.face_encoding_comparing_service import (
     FaceEncodingService,
 )
 
