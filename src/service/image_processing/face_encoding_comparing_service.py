@@ -85,16 +85,15 @@ class FaceEncodingService:
 
     def validate_encoding_consistency(
         self, encodings: List[np.ndarray], threshold: float = 0.6
-    ) -> None:
-        """Check if all encodings are similar enough to be from the same person (raises HTTPException on failure)."""
-        for i in range(len(encodings)):
-            for j in range(i + 1, len(encodings)):
-                distance = np.linalg.norm(encodings[i] - encodings[j])
-                if distance > threshold:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Face encodings are inconsistent. Distance between file {i + 1} and {j + 1} is too large ({distance:.4f} > {threshold}). Please recapture images.",
-                    )
+    ):
+        distances = [np.linalg.norm(encoding - encodings[0]) for encoding in encodings]
+        inconsistent = [d for d in distances if d > threshold]
+
+        if inconsistent:
+            raise HTTPException(
+                status_code=400,
+                detail="Inconsistent facial encodings detected across images.",
+            )
 
     def average_encodings(self, encodings: List[np.ndarray]) -> List[float]:
         """Calculates the mean of multiple face encodings for robust registration."""
