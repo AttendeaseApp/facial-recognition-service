@@ -9,7 +9,7 @@ from src.service.image_processing.face_encoding_comparing_service import (
 )
 from src.service.image_processing.image_processing_service import ImageProcessingService
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 
 
 class MultiImageRegistrationService:
@@ -37,11 +37,13 @@ class MultiImageRegistrationService:
                 detail="At least 5 images required for registration",
             )
 
-        encodings: List[np.ndarray] = []
+        sum_encoding = np.zeros(128, dtype=np.float32)
+        count = 0
 
         for file in files:
             encoding = await self._image_service.extract_single_encoding(file)
-            encodings.append(encoding)
+            sum_encoding += encoding
+            count += 1
 
         self._encoding_service.validate_encoding_consistency(encodings, threshold=0.6)
 
