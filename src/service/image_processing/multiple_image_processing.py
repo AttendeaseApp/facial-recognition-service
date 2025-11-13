@@ -38,19 +38,29 @@ class MultiImageRegistrationService:
             )
 
         sum_encoding = np.zeros(128, dtype=np.float32)
-        count = 0
+        encodings_count = 0
+        first_encoding = None
 
         for file in files:
             encoding = await self._image_service.extract_single_encoding(file)
+
+            if first_encoding is None:
+                first_encoding = encoding
+            else:
+                distance = np.linalg.norm(encoding - first_encoding)
+                if distance > 0.6:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Inconsistent facial encodings detected across images.",
+                    )
+
             sum_encoding += encoding
-            count += 1
+            encodings_count += 1
 
-        self._encoding_service.validate_encoding_consistency(encodings, threshold=0.6)
-
-        averaged_encoding_list = self._encoding_service.average_encodings(encodings)
+        average_encoding = (sum_encoding / encodings_count).tolist()
 
         return {
             "success": True,
             "message": "Face encodings validated and averaged",
-            "facialEncoding": averaged_encoding_list,
+            "facialEncoding": average_encoding,
         }
