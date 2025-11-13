@@ -19,7 +19,7 @@ registration_service = MultiImageRegistrationService(
 
 
 @router.post(
-    "/v1/extract-multiple-face-encodings",
+    "/extract-multiple-face-encodings",
     tags=["Multi-Image Registration"],
     summary="Extract, validate, and average face encodings from multiple uploaded images.",
 )

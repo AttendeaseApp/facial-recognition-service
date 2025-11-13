@@ -12,7 +12,7 @@ router = APIRouter()
 service = FaceEncodingService()
 
 
-@router.post("/v1/validate-facial-encoding")
+@router.post("/validate-facial-encoding")
 async def validate_facial_encoding(request: FaceEncodingRequest):
     """
     Validate and return facial encoding sent by the client.

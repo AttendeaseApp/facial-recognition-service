@@ -1,6 +1,7 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
-import logging
 
 # models
 from src.data.face_image_request_model import FaceImageRequest
@@ -15,7 +16,7 @@ base64_extractor_service = ImageProcessingService()
 
 
 @router.post(
-    "/v1/extract-face-encoding",
+    "/extract-face-encoding",
     tags=["Face Verification/Extraction"],
     summary="Extract a single face encoding from a Base64 image string.",
 )
