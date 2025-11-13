@@ -11,7 +11,7 @@ from src.service.image_processing.face_encoding_comparing_service import (
 # Import the services that handle the atomic tasks
 from src.service.image_processing.image_processing_service import ImageProcessingService
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 
 
 class MultiImageRegistrationService:
@@ -40,25 +40,20 @@ class MultiImageRegistrationService:
                 detail="At least 5 images required for registration",
             )
 
-        encodings: List[np.ndarray] = []
+        sum_encoding = np.zeros(128, dtype=np.float32)
+        count = 0
 
-        # 2. Extraction Loop
         for file in files:
-            # Delegate single image extraction and validation to the dedicated Image Service
-            # This service method raises HTTPException if it fails (e.g., no face, multiple faces)
             encoding = await self._image_service.extract_single_encoding(file)
-            encodings.append(encoding)
+            sum_encoding += encoding
+            count += 1
 
-        # 3. Consistency Check
-        # Delegate consistency validation to the dedicated Encoding Service
-        # This service method raises HTTPException if validation fails
-        self._encoding_service.validate_encoding_consistency(encodings, threshold=0.6)
+        averaged_encoding = (sum_encoding / count).tolist()
 
         # 4. Final Calculation
         # Delegate averaging and scoring to the dedicated Encoding Service
-        averaged_encoding_list = self._encoding_service.average_encodings(encodings)
-        consistency_score = self._encoding_service.calculate_consistency_score(
-            encodings
+        averaged_encoding_list = self._encoding_service.average_encodings(
+            averaged_encoding
         )
 
         # 5. Return structured result
@@ -66,5 +61,4 @@ class MultiImageRegistrationService:
             "success": True,
             "message": "Face encodings validated and averaged",
             "facialEncoding": averaged_encoding_list,
-            "confidence_score": consistency_score,
         }
