@@ -26,14 +26,11 @@ async def extract_face_encoding_base64(request: FaceImageRequest):
     Returns the encoding as a list of floating-point numbers.
     """
     try:
-        encoding_list = base64_extractor_service.extract_encoding_from_base64(
+        result = base64_extractor_service.extract_encoding_from_base64(
             image_base64=request.image_base64
         )
-
-        return {
-            "success": True,
-            "facialEncoding": encoding_list,
-        }
+        
+        return result
 
     except HTTPException as e:
         logging.error(
