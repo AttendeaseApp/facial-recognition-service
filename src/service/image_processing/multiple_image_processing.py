@@ -7,8 +7,6 @@ from fastapi import HTTPException, UploadFile
 from src.service.image_processing.face_encoding_comparing_service import (
     FaceEncodingService,
 )
-
-# Import the services that handle the atomic tasks
 from src.service.image_processing.image_processing_service import ImageProcessingService
 
 logging.basicConfig(level=logging.WARNING)
@@ -33,7 +31,6 @@ class MultiImageRegistrationService:
         """
         Extracts, validates consistency, and averages face encodings from files.
         """
-        # 1. Minimum File Count Validation (This could stay in the router but is handled here for end-to-end logic)
         if len(files) < 5:
             raise HTTPException(
                 status_code=400,
@@ -48,15 +45,10 @@ class MultiImageRegistrationService:
             sum_encoding += encoding
             count += 1
 
-        averaged_encoding = (sum_encoding / count).tolist()
+        self._encoding_service.validate_encoding_consistency(encodings, threshold=0.6)
 
-        # 4. Final Calculation
-        # Delegate averaging and scoring to the dedicated Encoding Service
-        averaged_encoding_list = self._encoding_service.average_encodings(
-            averaged_encoding
-        )
+        averaged_encoding_list = self._encoding_service.average_encodings(encodings)
 
-        # 5. Return structured result
         return {
             "success": True,
             "message": "Face encodings validated and averaged",
