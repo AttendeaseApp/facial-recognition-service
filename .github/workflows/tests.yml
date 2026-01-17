@@ -71,19 +71,23 @@ jobs:
             - name: Install system dependencies
               run: |
                   sudo apt-get update
-                  sudo apt-get install -y cmake build-essential libopenblas-dev liblapack-dev
+                  sudo apt-get install -y cmake build-essential libopenblas-dev liblapack-dev libx11-dev
 
             - name: Install Python dependencies
               run: |
                   python -m pip install --upgrade pip setuptools wheel
+                  # Install application dependencies first
+                  if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
+                  # Then install test dependencies
                   pip install pytest pytest-asyncio pytest-cov pytest-xdist
-                  if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-                  if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+                  if [ -f dev-requirements.txt ]; then pip install -r dev-requirements-dev.txt; fi
 
-            - name: Install package in editable mode
+            - name: Verify critical installations
               run: |
-                  pip install -e .
-              continue-on-error: true
+                  python -c "import numpy; print(f'numpy {numpy.__version__}')" || echo "numpy missing"
+                  python -c "import face_recognition; print('face_recognition installed')" || echo "face_recognition missing"
+                  python -c "import PIL; print('PIL installed')" || echo "PIL missing"
+                  python -c "import pytest; print('pytest installed')" || echo "pytest missing"
 
             - name: Run tests with pytest
               run: |
