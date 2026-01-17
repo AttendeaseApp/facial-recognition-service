@@ -67,6 +67,7 @@ class FaceEncodingService:
             "confidence": float(confidence),
         }
 
+    # UNUSED
     def calculate_consistency_score(self, encodings: List[np.ndarray]) -> float:
         """Calculate a consistency score based on the average distance between all encoding pairs."""
         if not encodings or len(encodings) < 2:
@@ -83,6 +84,7 @@ class FaceEncodingService:
         consistency_score = np.exp(-avg_distance)
         return float(consistency_score)
 
+    # UNUSED
     def validate_encoding_consistency(
         self, encodings: List[np.ndarray], threshold: float = 0.6
     ):
@@ -95,6 +97,7 @@ class FaceEncodingService:
                 detail="Inconsistent facial encodings detected across images.",
             )
 
+    # UNUSED
     def average_encodings(self, encodings: List[np.ndarray]) -> List[float]:
         """Calculates the mean of multiple face encodings for robust registration."""
         averaged_encoding = np.mean(encodings, axis=0)
