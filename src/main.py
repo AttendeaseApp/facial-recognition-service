@@ -160,11 +160,12 @@ async def internal_error_handler(request: Request, exc: Exception):
     )
 
 
+# RUN THE SERVICE HERE
 if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        "main:app",
+        "src.main:app",
         host="0.0.0.0",
         port=8000,
         reload=False,
