@@ -1,20 +1,22 @@
-from fastapi import FastAPI
 import logging
 
-logging.basicConfig(level=logging.INFO)
+from fastapi import FastAPI
 
 # api
+from src.api.facial_registration.facial_registration_router import (
+    router as register_facial_encodings,
+)
 from src.api.facial_verification.compare_face_encoding_router import (
     router as authenticate_face_router,
 )
 from src.api.facial_verification.extract_face_encoding_router import (
     router as authenticate_user_face,
 )
-
-from src.api.facial_registration.facial_registration_router import (
-    router as register_facial_encodings,
+from src.api.health_check.health_check_router import (
+    router as system_health_check,
 )
 
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
     title="Facial Recognition Service API",
@@ -29,3 +31,5 @@ app.include_router(authenticate_face_router, tags=["Face Verification"])
 app.include_router(authenticate_user_face, tags=["Face Verification/Extraction"])
 
 app.include_router(register_facial_encodings, tags=["Multi-Image Registration"])
+
+app.include_router(system_health_check, tags=["Health"])
