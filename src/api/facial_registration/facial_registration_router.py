@@ -8,12 +8,11 @@ from src.service.image_processing.image_processing_service import ImageProcessin
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
 image_service = ImageProcessingService()
 
 
 class FaceEncodingResponse(BaseModel):
-    """Response model for single face encoding extraction."""
+    """Response model for face encoding extraction."""
 
     success: bool
     facialEncoding: List[float]
@@ -22,42 +21,98 @@ class FaceEncodingResponse(BaseModel):
 
 
 @router.post(
-    "/extract-face-encoding",
-    tags=["Face Verification/Extraction"],
-    summary="Extract face encoding from a single image for verification",
+    "/extract-multiple-face-encodings",
+    tags=["Face Registration"],
+    summary="Extract averaged face encoding from 5 images for registration",
     response_model=FaceEncodingResponse,
 )
-async def extract_face_encoding_for_verification(
-    file: UploadFile = File(..., description="Single facial image for verification"),
+async def extract_multiple_face_encodings(
+    files: List[UploadFile] = File(..., description="5 facial images for registration"),
 ) -> FaceEncodingResponse:
     """
-    Extract facial encoding from a single uploaded image.
-    Used during authentication/verification to compare against stored encoding.
+    Extract averaged facial encoding from 5 uploaded images.
+    Used during registration to create a robust face profile.
 
     This endpoint:
-    - Accepts 1 image
-    - Validates image has one clear face
-    - Checks image quality
-    - Returns encoding for comparison
+    - Accepts exactly 5 images
+    - Validates each image has one clear face
+    - Checks image quality for all images
+    - Returns averaged encoding for better accuracy
+
+    Args:
+        files: List of exactly 5 image files (sent as multipart/form-data with field name "files")
 
     Returns:
         - success: Boolean indicating operation success
-        - facialEncoding: 128-dimensional face encoding
+        - facialEncoding: 128-dimensional averaged face encoding
         - message: Human-readable status message
-        - metadata: Quality score and processing details
+        - metadata: Quality scores and processing details for all images
+
+    Raises:
+        400: Invalid number of images, no face detected, multiple faces, or poor quality
+        413: Request size exceeds limit
+        422: Validation error (wrong field name or format)
+        500: Server processing error
     """
     try:
-        logger.info(f"Extracting face encoding from file: {file.filename}")
+        # Log request details
+        logger.info(f"Received {len(files)} files for face encoding extraction")
+
+        # Log individual file sizes
+        for idx, file in enumerate(files, 1):
+            file_size_kb = len(await file.read()) / 1024
+            await file.seek(0)  # Reset file pointer
+            logger.info(
+                f"Processing image {idx}: {file.filename} ({file_size_kb:.0f} KB)"
+            )
+
+        # Calculate total size
+        total_size = sum([len(await f.read()) for f in files])
+        for f in files:
+            await f.seek(0)  # Reset all file pointers
+        logger.info(
+            f"Total upload size: {total_size / 1024 / 1024:.0f} MB ({total_size} bytes)"
+        )
+
+        # Validate file count
+        if len(files) != 5:
+            logger.warning(
+                f"Invalid number of files: expected 5, received {len(files)}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Expected 5 images, received {len(files)}. Please upload exactly 5 clear photos of your face.",
+            )
+
+        logger.info("Sending request to facial service...")
+
+        # Process images through the service
         result = await image_service.extract_multiple_encodings(
-            files=[file], required_count=1
+            files=files, required_count=5
         )
 
         quality = result["metadata"]["average_quality"]
-        message = "Face encoding extracted successfully"
+        quality_scores = result["metadata"]["quality_scores"]
 
-        if quality < 50:
-            logger.warning(f"Low quality image ({quality:.2f}) for verification")
-            message = f"Face detected but image quality is low ({quality:.1f}/100). Consider retaking in better lighting for more accurate verification."
+        # Generate appropriate message based on quality
+        if quality >= 70:
+            message = "Face encodings extracted successfully with excellent quality"
+        elif quality >= 50:
+            message = f"Face encodings extracted successfully (average quality: {quality:.1f}/100)"
+        else:
+            message = (
+                f"Faces detected but average image quality is low ({quality:.1f}/100). "
+                "Consider retaking photos in better lighting for more accurate registration."
+            )
+            logger.warning(f"Low average quality ({quality:.2f}) across images")
+
+        # Log individual quality scores
+        for idx, score in enumerate(quality_scores, 1):
+            logger.info(f"Image {idx} quality score: {score:.2f}/100")
+
+        logger.info(
+            f"Successfully processed {len(files)} images with average quality {quality:.2f}"
+        )
 
         return FaceEncodingResponse(
             success=True,
@@ -72,7 +127,8 @@ async def extract_face_encoding_for_verification(
 
     except Exception as e:
         logger.error(
-            f"Unexpected error during face encoding extraction: {e}", exc_info=True
+            f"Unexpected error during face encoding extraction: {type(e).__name__}: {e}",
+            exc_info=True,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
