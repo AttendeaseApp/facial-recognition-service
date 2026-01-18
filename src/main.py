@@ -80,9 +80,9 @@ async def lifespan(app: FastAPI):
         f"  - Max request size: {RequestSizeLimitMiddleware.MAX_REQUEST_SIZE / 1024 / 1024:.0f} MB"
     )
     logger.info("Service ready to accept requests")
-    logger.info("API Documentation: http://localhost:8000/docs")
-    logger.info("Health Check: http://localhost:8000/health/status")
-    logger.info("Run Tests: http://localhost:8000/health/run-tests")
+    logger.info("API Documentation: http://localhost:8001/docs")
+    logger.info("Health Check: http://localhost:8001/health/status")
+    logger.info("Run Tests: http://localhost:8001/health/run-tests")
 
     yield
 
@@ -235,16 +235,16 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
-# RUN THE SERVICE HERE
-if __name__ == "__main__":
-    import uvicorn
+# # RUN THE SERVICE HERE
+# if __name__ == "__main__":
+#     import uvicorn
 
-    uvicorn.run(
-        "src.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=False,
-        log_level="info",
-        timeout_keep_alive=120,
-        limit_concurrency=1000,
-    )
+#     uvicorn.run(
+#         "src.main:app",
+#         host="0.0.0.0",
+#         port=8001,
+#         reload=False,
+#         log_level="info",
+#         timeout_keep_alive=120,
+#         limit_concurrency=1000,
+#     )
