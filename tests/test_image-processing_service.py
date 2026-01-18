@@ -330,10 +330,12 @@ class TestImprovedImageProcessingService:
             mock_locations.return_value = [(50, 590, 430, 50)]
             mock_encodings.return_value = [sample_encoding_array]
 
-            result = await service.extract_multiple_encodings(mock_upload_file)
+            result = await service.extract_multiple_encodings(
+                [mock_upload_file], required_count=1
+            )
 
-            assert isinstance(result, np.ndarray)
-            assert len(result) == 128
+            assert result["success"] is True
+            assert len(result["facialEncoding"]) == 128
 
     @pytest.mark.asyncio
     async def test_grayscale_image_conversion(self):
@@ -617,9 +619,10 @@ class TestEdgeCases:
             mock_locations.return_value = [(50, 590, 430, 50)]
             mock_encodings.return_value = [np.random.rand(128)]
 
-            result = await service.extract_multiple_encodings(file)
+            result = await service.extract_multiple_encodings([file], required_count=1)
 
-            assert isinstance(result, np.ndarray)
+            assert result["success"] is True
+            assert len(result["facialEncoding"]) == 128
 
     @pytest.mark.asyncio
     async def test_concurrent_processing(self, mock_upload_files_list):
