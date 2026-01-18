@@ -67,38 +67,38 @@ class FaceEncodingService:
             "confidence": float(confidence),
         }
 
-    # UNUSED
-    def calculate_consistency_score(self, encodings: List[np.ndarray]) -> float:
-        """Calculate a consistency score based on the average distance between all encoding pairs."""
-        if not encodings or len(encodings) < 2:
-            return 1.0
-        distances = []
-        n = len(encodings)
+    # # UNUSED
+    # def calculate_consistency_score(self, encodings: List[np.ndarray]) -> float:
+    #     """Calculate a consistency score based on the average distance between all encoding pairs."""
+    #     if not encodings or len(encodings) < 2:
+    #         return 1.0
+    #     distances = []
+    #     n = len(encodings)
 
-        for i in range(n):
-            for j in range(i + 1, n):
-                distance = np.linalg.norm(encodings[i] - encodings[j])
-                distances.append(distance)
+    #     for i in range(n):
+    #         for j in range(i + 1, n):
+    #             distance = np.linalg.norm(encodings[i] - encodings[j])
+    #             distances.append(distance)
 
-        avg_distance = np.mean(distances)
-        consistency_score = np.exp(-avg_distance)
-        return float(consistency_score)
+    #     avg_distance = np.mean(distances)
+    #     consistency_score = np.exp(-avg_distance)
+    #     return float(consistency_score)
 
-    # UNUSED
-    def validate_encoding_consistency(
-        self, encodings: List[np.ndarray], threshold: float = 0.6
-    ):
-        distances = [np.linalg.norm(encoding - encodings[0]) for encoding in encodings]
-        inconsistent = [d for d in distances if d > threshold]
+    # # UNUSED
+    # def validate_encoding_consistency(
+    #     self, encodings: List[np.ndarray], threshold: float = 0.6
+    # ):
+    #     distances = [np.linalg.norm(encoding - encodings[0]) for encoding in encodings]
+    #     inconsistent = [d for d in distances if d > threshold]
 
-        if inconsistent:
-            raise HTTPException(
-                status_code=400,
-                detail="Inconsistent facial encodings detected across images.",
-            )
+    #     if inconsistent:
+    #         raise HTTPException(
+    #             status_code=400,
+    #             detail="Inconsistent facial encodings detected across images.",
+    #         )
 
-    # UNUSED
-    def average_encodings(self, encodings: List[np.ndarray]) -> List[float]:
-        """Calculates the mean of multiple face encodings for robust registration."""
-        averaged_encoding = np.mean(encodings, axis=0)
-        return averaged_encoding.tolist()
+    # # UNUSED
+    # def average_encodings(self, encodings: List[np.ndarray]) -> List[float]:
+    #     """Calculates the mean of multiple face encodings for robust registration."""
+    #     averaged_encoding = np.mean(encodings, axis=0)
+    #     return averaged_encoding.tolist()

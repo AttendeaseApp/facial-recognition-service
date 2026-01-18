@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # api
 from src.api.facial_registration.facial_registration_router import (
@@ -26,6 +27,40 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to enforce request size limits.
+    Prevents memory issues from excessively large uploads.
+    """
+
+    MAX_REQUEST_SIZE = 100 * 1024 * 1024
+
+    async def dispatch(self, request: Request, call_next):
+        if request.method in ["POST", "PUT", "PATCH"]:
+            content_length = request.headers.get("content-length")
+            if content_length:
+                content_length = int(content_length)
+                if content_length > self.MAX_REQUEST_SIZE:
+                    logger.warning(
+                        f"Request rejected: size {content_length} bytes exceeds "
+                        f"limit of {self.MAX_REQUEST_SIZE} bytes"
+                    )
+                    return JSONResponse(
+                        status_code=413,
+                        content={
+                            "success": False,
+                            "error": "Request Entity Too Large",
+                            "message": f"Request size ({content_length / 1024 / 1024:.2f} MB) "
+                            f"exceeds maximum allowed size "
+                            f"({self.MAX_REQUEST_SIZE / 1024 / 1024:.0f} MB)",
+                            "max_size_mb": self.MAX_REQUEST_SIZE / 1024 / 1024,
+                        },
+                    )
+
+        response = await call_next(request)
+        return response
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -39,6 +74,11 @@ async def lifespan(app: FastAPI):
         logger.info("All core dependencies loaded successfully")
     except ImportError as e:
         logger.error(f"Missing dependency: {e}")
+
+    logger.info("Configuration:")
+    logger.info(
+        f"  - Max request size: {RequestSizeLimitMiddleware.MAX_REQUEST_SIZE / 1024 / 1024:.0f} MB"
+    )
     logger.info("Service ready to accept requests")
     logger.info("API Documentation: http://localhost:8000/docs")
     logger.info("Health Check: http://localhost:8000/health/status")
@@ -72,6 +112,10 @@ app = FastAPI(
     * `/health/run-tests` - Execute test suite
     * `/health/full` - Comprehensive health check
 
+    ### Limits
+    * Maximum request size: 100 MB
+    * Recommended individual image size: < 5 MB
+
     ### Author
     Rogationist Computer Society
 
@@ -83,6 +127,8 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+app.add_middleware(RequestSizeLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -125,6 +171,11 @@ async def root():
             "Health monitoring",
             "Integrated testing",
         ],
+        "limits": {
+            "max_request_size_mb": 100,
+            "recommended_image_size_mb": 5,
+            "max_images_per_request": 5,
+        },
     }
 
 
@@ -133,6 +184,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     """
     Custom handler for validation errors.
     """
+    logger.warning(f"Validation error on {request.url}: {exc.errors()}")
     return JSONResponse(
         status_code=422,
         content={
@@ -149,13 +201,36 @@ async def internal_error_handler(request: Request, exc: Exception):
     """
     Custom handler for internal server errors.
     """
-    logger.error(f"Internal error: {exc}", exc_info=True)
+    logger.error(f"Internal error on {request.url.path}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={
             "success": False,
             "error": "Internal Server Error",
             "message": "An unexpected error occurred. Please try again later.",
+            "path": request.url.path,
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """
+    Catch-all exception handler for better error visibility.
+    """
+    logger.error(
+        f"Unhandled exception on {request.url.path}: {type(exc).__name__}: {exc}",
+        exc_info=True,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": type(exc).__name__,
+            "message": str(exc)
+            if not isinstance(exc, Exception)
+            else "An unexpected error occurred",
+            "path": request.url.path,
         },
     )
 
@@ -170,4 +245,6 @@ if __name__ == "__main__":
         port=8000,
         reload=False,
         log_level="info",
+        timeout_keep_alive=120,
+        limit_concurrency=1000,
     )
