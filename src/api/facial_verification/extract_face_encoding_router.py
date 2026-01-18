@@ -1,10 +1,6 @@
-import logging
+from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import JSONResponse
-
-# models
-from src.data.face_image_request_model import FaceImageRequest
+from fastapi import APIRouter, File, UploadFile
 
 # services
 from src.service.image_processing.image_processing_service import (
@@ -15,38 +11,20 @@ router = APIRouter()
 base64_extractor_service = ImageProcessingService()
 
 
-@router.post(
-    "/extract-face-encoding",
-    tags=["Face Verification/Extraction"],
-    summary="Extract a single face encoding from a Base64 image string.",
-)
-async def extract_face_encoding_base64(request: FaceImageRequest):
+@router.post("/extract-face-encoding")
+async def extract_face_encoding_for_verification(
+    file: UploadFile = File(...),
+) -> Dict[str, Any]:
     """
-    Extracts and validates a single 128-dimensional face encoding from a Base64 image string.
-    Returns the encoding as a list of floating-point numbers.
+    Extract face encoding from a single image for verification.
+    Used during authentication to compare against stored encoding.
     """
-    try:
-        result = base64_extractor_service.extract_encoding_from_base64(
-            image_base64=request.image_base64
-        )
-        
-        return result
+    service = ImageProcessingService()
 
-    except HTTPException as e:
-        logging.error(
-            f"HTTPException during Base64 extraction: {e.detail}", exc_info=False
-        )
-        return JSONResponse(
-            status_code=e.status_code, content={"success": False, "error": e.detail}
-        )
-    except Exception as e:
-        logging.error(
-            f"Unexpected server error during Base64 extraction: {e}", exc_info=True
-        )
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "success": False,
-                "error": f"An unexpected server error occurred: {str(e)}",
-            },
-        )
+    result = await service.extract_multiple_encodings(files=[file], required_count=1)
+
+    return {
+        "success": True,
+        "facialEncoding": result["facialEncoding"],
+        "quality": result["metadata"]["average_quality"],
+    }

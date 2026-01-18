@@ -1,45 +1,78 @@
-from fastapi import APIRouter, HTTPException, status, File, UploadFile
 import logging
-from typing import List, Dict, Any
+from typing import Any, Dict, List, Optional
 
-# services
-from src.service.image_processing.face_encoding_comparing_service import FaceEncodingService
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from pydantic import BaseModel
+
 from src.service.image_processing.image_processing_service import ImageProcessingService
-from src.service.image_processing.multiple_image_processing import (
-    MultiImageRegistrationService,
-)
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
-encoding_service = FaceEncodingService()
 image_service = ImageProcessingService()
-registration_service = MultiImageRegistrationService(
-    encoding_service=encoding_service, image_service=image_service
-)
+
+
+class FaceEncodingResponse(BaseModel):
+    """Response model for single face encoding extraction."""
+
+    success: bool
+    facialEncoding: List[float]
+    message: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 @router.post(
-    "/extract-multiple-face-encodings",
-    tags=["Multi-Image Registration"],
-    summary="Extract, validate, and average face encodings from multiple uploaded images.",
+    "/extract-face-encoding",
+    tags=["Face Verification/Extraction"],
+    summary="Extract face encoding from a single image for verification",
+    response_model=FaceEncodingResponse,
 )
-async def extract_multiple_encodings(
-    files: List[UploadFile] = File(...),
-) -> Dict[str, Any]:
+async def extract_face_encoding_for_verification(
+    file: UploadFile = File(..., description="Single facial image for verification"),
+) -> FaceEncodingResponse:
     """
-    Extract and validate face encodings from multiple images for user registration.
+    Extract facial encoding from a single uploaded image.
+    Used during authentication/verification to compare against stored encoding.
+
+    This endpoint:
+    - Accepts 1 image
+    - Validates image has one clear face
+    - Checks image quality
+    - Returns encoding for comparison
+
+    Returns:
+        - success: Boolean indicating operation success
+        - facialEncoding: 128-dimensional face encoding
+        - message: Human-readable status message
+        - metadata: Quality score and processing details
     """
     try:
-        result = await registration_service.process_multi_encodings(files)
+        logger.info(f"Extracting face encoding from file: {file.filename}")
+        result = await image_service.extract_multiple_encodings(
+            files=[file], required_count=1
+        )
 
-        return result
+        quality = result["metadata"]["average_quality"]
+        message = "Face encoding extracted successfully"
+
+        if quality < 50:
+            logger.warning(f"Low quality image ({quality:.2f}) for verification")
+            message = f"Face detected but image quality is low ({quality:.1f}/100). Consider retaking in better lighting for more accurate verification."
+
+        return FaceEncodingResponse(
+            success=True,
+            facialEncoding=result["facialEncoding"],
+            message=message,
+            metadata=result["metadata"],
+        )
 
     except HTTPException as e:
+        logger.warning(f"Client error during face encoding extraction: {e.detail}")
         raise e
 
     except Exception as e:
-        logging.error(
-            f"Unexpected error during multi-file extraction: {e}", exc_info=True
+        logger.error(
+            f"Unexpected error during face encoding extraction: {e}", exc_info=True
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
